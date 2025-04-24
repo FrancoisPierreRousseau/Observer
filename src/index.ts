@@ -1,3 +1,5 @@
+import { map } from "./operators/map";
+
 export interface Observer<T> {
   next: (value: T) => void;
   error: (err: any) => void;
@@ -11,8 +13,6 @@ export interface Subscription {
 export type OperatorFunction<T, R> = (source: Observable<T>) => Observable<R>;
 
 export class Observable<T> {
-  protected observers: Observer<T>[] = [];
-
   constructor(private producer: (observer: Observer<T>) => void) {}
 
   subscribe(observer: Partial<Observer<T>>): Subscription {
@@ -21,19 +21,10 @@ export class Observable<T> {
       error: observer.error ?? (() => {}),
       complete: observer.complete ?? (() => {}),
     };
-    this.observers.push(safeObserver);
-
-    if (this.observers.length === 1) {
-      this.producer({
-        next: (value) => this.observers.forEach((o) => o.next(value)),
-        error: (err) => this.observers.forEach((o) => o.error(err)),
-        complete: () => this.observers.forEach((o) => o.complete()),
-      });
-    }
-
+    this.producer(safeObserver);
     return {
       unsubscribe: () => {
-        this.observers = this.observers.filter((o) => o !== safeObserver);
+        // Pas de gestion d'observers ici pour un Observable froid
       },
     };
   }
@@ -48,7 +39,39 @@ export class Observable<T> {
     op2: OperatorFunction<A, B>,
     op3: OperatorFunction<B, C>
   ): Observable<C>;
-  pipe<A>(...operations: OperatorFunction<T, A>[]): Observable<A> {
+  pipe<R>(...operations: OperatorFunction<any, any>[]): Observable<R>;
+  pipe(...operations: OperatorFunction<any, any>[]): Observable<any> {
     return operations.reduce((prev, fn) => fn(prev), this as Observable<any>);
   }
 }
+
+function fakeApiCall(): Promise<{ id: number; name: string }[]> {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      resolve([
+        { id: 1, name: "Alice" },
+        { id: 2, name: "Bob" },
+        { id: 3, name: "Charlie" },
+      ]);
+    }, 1000);
+  });
+}
+
+const apiData$ = new Observable<{ id: number; name: string }[]>((observer) => {
+  fakeApiCall()
+    .then((data) => {
+      observer.next(data);
+      observer.complete();
+    })
+    .catch((error) => observer.error(error));
+});
+
+apiData$
+  .pipe(
+    map((users) => users.map((u) => u.name)),
+    map((names) => names.filter((name) => name.startsWith("A")))
+  )
+  .subscribe({
+    next: (result) => console.log("Résultat filtré :", result),
+    complete: () => console.log("Terminé"),
+  });

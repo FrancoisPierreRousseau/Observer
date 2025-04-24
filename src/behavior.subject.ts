@@ -45,7 +45,7 @@ export class BehaviorSubject<T> {
     op2: OperatorFunction<A, B>,
     op3: OperatorFunction<B, C>
   ): Observable<C>;
-  pipe<A>(...operations: OperatorFunction<T, A>[]): Observable<A> {
+  pipe(...operations: OperatorFunction<any, any>[]): Observable<any> {
     // On crée un Observable qui s'abonne à ce BehaviorSubject
     const source = new Observable<T>((observer) => {
       const sub = this.subscribe(observer);
