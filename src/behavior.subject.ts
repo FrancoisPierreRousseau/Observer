@@ -1,7 +1,7 @@
 import { Observable, Observer, OperatorFunction, Subscription } from "./index";
 
 export class BehaviorSubject<T> {
-  private observers: Observer<T>[] = [];
+  private observers: Set<Observer<T>> = new Set();
   private currentValue: T;
 
   constructor(initialValue: T) {
@@ -14,14 +14,14 @@ export class BehaviorSubject<T> {
       error: observer.error ?? (() => {}),
       complete: observer.complete ?? (() => {}),
     };
-    this.observers.push(safeObserver);
+    this.observers.add(safeObserver);
 
     // Émet la valeur courante immédiatement
     safeObserver.next(this.currentValue);
 
     return {
       unsubscribe: () => {
-        this.observers = this.observers.filter((o) => o !== safeObserver);
+        this.observers.delete(safeObserver);
       },
     };
   }
