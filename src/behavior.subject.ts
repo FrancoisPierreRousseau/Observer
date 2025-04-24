@@ -1,4 +1,4 @@
-import { Observer, Subscription } from "./index";
+import { Observable, Observer, OperatorFunction, Subscription } from "./index";
 
 export class BehaviorSubject<T> {
   private observers: Observer<T>[] = [];
@@ -33,5 +33,24 @@ export class BehaviorSubject<T> {
 
   getValue(): T {
     return this.currentValue;
+  }
+
+  pipe<A>(op1: OperatorFunction<T, A>): Observable<A>;
+  pipe<A, B>(
+    op1: OperatorFunction<T, A>,
+    op2: OperatorFunction<A, B>
+  ): Observable<B>;
+  pipe<A, B, C>(
+    op1: OperatorFunction<T, A>,
+    op2: OperatorFunction<A, B>,
+    op3: OperatorFunction<B, C>
+  ): Observable<C>;
+  pipe<A>(...operations: OperatorFunction<T, A>[]): Observable<A> {
+    // On crée un Observable qui s'abonne à ce BehaviorSubject
+    const source = new Observable<T>((observer) => {
+      const sub = this.subscribe(observer);
+      return () => sub.unsubscribe();
+    });
+    return source.pipe(...operations);
   }
 }
