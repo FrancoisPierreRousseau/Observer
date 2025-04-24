@@ -1,14 +1,9 @@
-import { filter } from "./operators/filter";
-import { map } from "./operators/map";
-
-// Le contrat Observer (pattern Observer)
 export interface Observer<T> {
   next: (value: T) => void;
   error: (err: any) => void;
   complete: () => void;
 }
 
-// Le contrat Subscription (pour se désabonner)
 export interface Subscription {
   unsubscribe: () => void;
 }
@@ -16,7 +11,7 @@ export interface Subscription {
 export type OperatorFunction<T, R> = (source: Observable<T>) => Observable<R>;
 
 export class Observable<T> {
-  private observers: Observer<T>[] = [];
+  protected observers: Observer<T>[] = [];
 
   constructor(private producer: (observer: Observer<T>) => void) {}
 
@@ -57,34 +52,3 @@ export class Observable<T> {
     return operations.reduce((prev, fn) => fn(prev), this as Observable<any>);
   }
 }
-
-function fakeApiCall(): Promise<{ id: number; name: string }[]> {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve([
-        { id: 1, name: "Alice" },
-        { id: 2, name: "Bob" },
-        { id: 3, name: "Charlie" },
-      ]);
-    }, 1000); // Simule 1 seconde de délai
-  });
-}
-
-const apiData$ = new Observable<{ id: number; name: string }[]>((observer) => {
-  fakeApiCall()
-    .then((data) => {
-      observer.next(data);
-      observer.complete();
-    })
-    .catch((error) => observer.error(error));
-});
-
-apiData$
-  .pipe(
-    map((users) => users.map((u) => u.name)),
-    map((names) => names.filter((n) => n.startsWith("A")))
-  )
-  .subscribe({
-    next: (result) => console.log("Résultat filtré :", result),
-    complete: () => console.log("Terminé"),
-  });
