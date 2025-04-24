@@ -35,21 +35,6 @@ export class Observable<T> {
     op3: OperatorFunction<B, C>
   ): Observable<C>;
   pipe<R>(...operations: OperatorFunction<any, any>[]): Observable<R>;
-  /**
-   * Applies the given operators to the observable in order, returning an
-   * observable that is the result of the last operator. Each operator is given
-   * the previous observable as an argument.
-   *
-   * @example
-   * import { filter, map } from "./operators";
-   *
-   * const result$ = apiData$.pipe(
-   *   filter((data) => data.length > 2),
-   *   map((data) => data.map((user) => user.name))
-   * );
-   * @param {...OperatorFunction<any, any>[]} operations
-   * @returns {Observable<any>}
-   */
   pipe(...operations: OperatorFunction<any, any>[]): Observable<any> {
     return operations.reduce((prev, fn) => fn(prev), this as Observable<any>);
   }
